@@ -14,7 +14,7 @@ import nltk
 # Some constants that will be refer to later
 N_V   = 1000 # number of vocabularies
 N_H   = 50   # number of neurons in the hidden layer
-C     = 5
+C     = 2    # context window size, meaning including C left words and C right words (2C + 1 in total)
 MIN_F = 100
 
 # read in data
@@ -68,22 +68,25 @@ model.add(Activation("softmax"))
 # Compile the model
 model.compile(loss = 'categorical_crossentropy', optimizer = 'sgd', metrics = ['accuracy'])
 
-# Everytime send in a context window
+# Training
 for sentence in corpus:
 
-	sentence_tmp = "<s> " * C/2 + sentence + " <s>" * C/2
+	sentence_tmp = "<s> " * C + sentence + " <s>" * C
 
-	for i in range(C/2, len(sentence_tmp) - C/2 + 1):
-		average = [0] * N_V
+	# Everytime send in a context window
+	for i in range(C, len(sentence_tmp) - C + 1):
+		x_train_batch = [0] * N_V
 
-		for j in range(i - C/2, i + C/2 + 1):
-			tmp = [0] * N_V
-			tmp[vocab.index(sentence_tmp[j])] = 1
-			average += tmp
+		for j in range(i - C, i + C + 1):
+			if i != j:
+				tmp = [0] * N_V
+				tmp[vocab.index(sentence_tmp[j])] = 1
+				x_train_batch += tmp
 
-		average = average / float(C)
+		x_train_batch = x_train_batch / float(2 * C)
+
+		# the ith word is thus the target word for prediction
+		y_train_batch = [0] * N_V; y_train_batch[vocab.index(sentence_tmp[i])] = 1
 
 		# use the above as the input for the input for the model
-
-
-
+		model.fit(x_train_batch, y_train_batch)
