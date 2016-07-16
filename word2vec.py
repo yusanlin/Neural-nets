@@ -10,6 +10,7 @@ import csv
 import sys
 import nltk
 import pickle
+import random
 import decimal
 import os.path
 
@@ -17,6 +18,7 @@ import numpy as np
 
 from collections import Counter
 from nltk.stem.porter import PorterStemmer
+from sklearn.cross_validation import train_test_split
 
 # Some constants that will be refer to later
 N_V   = 1000 # number of vocabularies
@@ -101,35 +103,65 @@ model.add(Activation("softmax"))
 # Compile the model
 model.compile(loss = 'categorical_crossentropy', optimizer = 'sgd', metrics = ['accuracy'])
 
-# Training
-for sentence in corpus:
+total_sentences   = len(corpus)
+processed_sentences = 0.0
+
+accuracy = float("-inf")
+
+# Beacuse we don't want to try on the whole dataset yet, let's subsample it
+corpus_subsample = random.sample(corpus, 5000)
+
+#X = np.array()
+#y = np.array()
+X = []
+Y = []
+
+# Construct X and Y
+print "Constructing X and Y"
+for sentence in corpus_subsample:
+
+	print processed_sentences, "sentences processed"
 
 	sentence_tmp = "<s> " * C + sentence + " <s>" * C
 
 	# Everytime send in a context window
 	for i in range(C, len(sentence_tmp) - C + 1):
-		#x_train_batch = [0] * N_V
-		x_train_batch = np.zeros(N_V)
+		x = np.zeros(N_V)
 
-		for j in range(i - C, i + C + 1):
+		for j in range(i - C, i + C):
 			if i != j:
-				#tmp = [0] * N_V
 				tmp = np.zeros(N_V)
 				try:
 					tmp[vocab.index(sentence_tmp[j])] = 1
 				except ValueError:
 					pass
-				x_train_batch += tmp
+				x += tmp
 
-		x_train_batch = np.array([ x/float(2 * C) for x in x_train_batch]).reshape((1, N_V))
+		x = np.array([ w/float(2 * C) for w in x]).reshape((1, N_V))
 
 		# the ith word is thus the target word for prediction
-		y_train_batch = np.zeros(N_V)
+		y = np.zeros(N_V)
 		try:
-			y_train_batch[vocab.index(sentence_tmp[i])] = 1
+			y[vocab.index(sentence_tmp[i])] = 1
 		except ValueError:
 			pass
-		y_train_batch = y_train_batch.reshape((1, N_V))
+		y = y.reshape((1, N_V))
 
-		# use the above as the input for the input for the model
-		model.fit(x_train_batch, y_train_batch)
+		X.append(list(x))
+		Y.append(list(y))
+
+	processed_sentences += 1
+
+X = np.array(X)
+y = np.array(y)
+
+# Split the X and Y into training and testing
+print "Splitting into training and testing"
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.33, random_state = 42)
+
+# Fit the model
+print "Fitting the model"
+while accuracy < 50:
+	model.fit(X_train, y_train, verbose = 0)
+	accuracy = model.evaluate(X_test, y_test)
+	print "Accuracy: ", accuracy, "%"
