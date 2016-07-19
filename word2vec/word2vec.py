@@ -27,7 +27,7 @@ C        = 2    # context window size, meaning including C left words and C righ
 MIN_F    = 100
 MAX_ITER = 10   # maximum allowed training iterations
 
-path_data = "data/"
+path_data = "../data/"
 
 # check whether the processed corpus exists
 if os.path.isfile(path_data + "imdb_corpus.p"):
