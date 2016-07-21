@@ -5,76 +5,22 @@ doc2vec.py
 [1] Quoc Le, Tomas Mikolov, Distributed Representations of Sentences and Documents, https://cs.stanford.edu/~quocle/paragraph_vector.pdf
 """
 
-# imports
-import re
-import csv
-import sys
-import nltk
-import pickle
-import random
-import decimal
-import os.path
-import itertools
+from initializer import *
+from functions import *
+from loader import *
 
-import numpy as np
-
-from keras.models import Sequential
-from keras.layers import Dense, Activation
-from keras.engine.topology import *
-
-from collections import Counter
-from nltk.stem.porter import PorterStemmer
-from sklearn.cross_validation import train_test_split
-
-path_data = "../data/"
-stemmer   = PorterStemmer()
-TWOPLACES = decimal.Decimal(10) ** -2
-
-# Some constants that will be refer to later
-N_V      = 1000 # number of vocabularies
-N_H      = 50   # number of neurons in the hidden layer
-C        = 2    # context window size, meaning including C left words and C right words (2C + 1 in total)
-MIN_F    = 100
-MAX_ITER = 10   # maximum allowed training iterations
-
-def clean(s):
-	s = s.replace("<br />", "") # remove all the new line tags
-	s = s.replace("\\", "")     # remove all the annoying back slashes
-	s = s.lower()               # convert all the letters into lowercases
-	s = s.decode("ascii", "ignore")
-
-	s_stemmed = []
-	for x in s.split(" "):
-		s_stemmed.append(stemmer.stem(x))
-
-	return " ".join(s_stemmed)
+# ---------------
+# Load the corpus
+# ---------------
 
 print "Processing the corpus data..."
-# read in data
-filename  = "unlabeledTrainData.tsv"
-corpus = [] # initialize corpus into a long long string that concatenates all the reviews together
-with open(path_data + filename, "rbU") as f:
-	next(f) # skip the first line
-	reader = csv.reader(f, delimiter = '\t')
-	for row in reader:
-		corpus.append(clean(row[1]))
-
-# create vocabularies
-# the corpus is flattened into a 1-d list
-counter = Counter(" ".join(corpus).split(" "))
-corpus_flattened = None
-#vocab   = [x for x,y in counter.most_common() if y >= MIN_F]
-
-# get all the unique words and sort them alphabetically
-# add in the special token for buffer as well
-vocab   = [x for x,y in counter.most_common()]; vocab.append("<s>"); vocab.sort()
-N_V     = len(vocab)
+corpus, vocab = load_corpus("unlabeledTrainData.tsv")
 
 # -----------------------------------------
 # Build the model (different from word2vec)
 # -----------------------------------------
 N = len(corpus) # number of paragraphs/docs
-M = N_V         # number of vocabularies
+M = len(vocab)  # number of vocabularies
 
 p = 10          # dimension of paragraphs
 q = 50          # dimension of words
