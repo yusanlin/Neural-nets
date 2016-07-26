@@ -2,12 +2,14 @@
 doc2vec.py
 @author: Yusan Lin
 @description: This program implements the Paragraph Vector proposed in 
-[1] Quoc Le, Tomas Mikolov, Distributed Representations of Sentences and Documents, https://cs.stanford.edu/~quocle/paragraph_vector.pdf
+[1] Quoc Le, Tomas Mikolov, Distributed Representations of Sentences and Documents, 
+    https://cs.stanford.edu/~quocle/paragraph_vector.pdf
 """
 
 from initializer import *
 from functions import *
 from loader import *
+from sampling import *
 
 # ---------------
 # Load the corpus
@@ -49,59 +51,8 @@ print "There are", len(corpus), "paraphs in the dataset."
 n_samples = int(raw_input("How many paragraphs do you want to sub sample? "))
 corpus_subsample = random.sample(corpus, n_samples)
 
-X = []
-Y = []
-
-processed_paragraphs = 0 
-
-# for the same paragrah, they receive the same paragraph id
-pid = 0 
-for paragraph in corpus_subsample:
-	d = np.zeros(N) # initialize a single paragraph vector with N zeros
-	d[pid] = 1
-
-	print processed_paragraphs, "paragraphs processed"
-
-	# do context window over a paragraph
-	for sentence in nltk.tokenize.sent_tokenize(paragraph):
-
-		#print processed_sentences, "sentences processed"
-		#print sentence
-
-		sentence_tmp = "<s> " * C + sentence + " <s>" * C
-		sentence_tmp = sentence_tmp.split()
-
-		# Everytime send in a context window
-		for i in range(C, len(sentence_tmp) - C + 1):
-			#print sentence_tmp[i]
-			x = np.zeros(N_V)
-
-			for j in range(i - C, i + C):
-				if i != j:
-					tmp = np.zeros(N_V)
-					try:
-						tmp[vocab.index(sentence_tmp[j])] = 1
-					except ValueError:
-						pass
-					x += tmp
-
-			x = np.array([ w/float(2 * C) for w in x]).reshape((1, N_V))[0]
-
-			# the ith word is thus the target word for prediction
-			y = np.zeros(N_V)
-			try:
-				y[vocab.index(sentence_tmp[i])] = 1
-			except ValueError:
-				pass
-			y = y.reshape((1, N_V))[0]
-
-			X.append(list(d) + list(x)) # input is the concatenation of paragraph and words
-			Y.append(list(y))		
-
-	processed_paragraphs += 1
-
-X = np.array(X)
-Y = np.array(Y)
+# Sample the selected corpus to form X and Y
+X, Y = sample_paragraph(corpus_subsample, vocab)
 
 # Split the X and Y into training and testing
 print "Splitting into training and testing"

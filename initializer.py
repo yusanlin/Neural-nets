@@ -24,7 +24,6 @@ from nltk.stem.porter import PorterStemmer
 from sklearn.cross_validation import train_test_split
 
 # constants
-path_data = "data/"
 N_V       = 1000 # number of vocabularies
 N_H       = 50   # number of neurons in the hidden layer
 C         = 2    # context window size, meaning including C left words and C right words (2C + 1 in total)
